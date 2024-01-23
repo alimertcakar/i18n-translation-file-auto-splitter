@@ -56,8 +56,9 @@ const findTranslationCallsIn = (
   let fileContents = {};
   files.forEach((file) => {
     const readedFile = fs.readFileSync(file, "utf-8");
-    if (isTargetedFile(file))
+    if (isTargetedFile(file)) {
       fileContents[file] = readedFile.match(translationMatcher);
+    }
   });
   const result = { ...subDirectoryContents, ...fileContents };
   return result;
@@ -157,6 +158,8 @@ const findKeyInTranslationFiles = (targetKey, files) => {
 const mapTranslationCallsToList = (translationCalls) => {
   const translationCallsList = [];
 
+  if (!translationCalls) return translationCallsList;
+
   Object.keys(translationCalls).forEach((key) => {
     if (isTargetedFile(key)) {
       const calls = translationCalls[key];
@@ -189,23 +192,24 @@ const findLocalesDirectories = (
   existingTranslationFiles,
   directories
 ) => {
-  calls.forEach((translationCall) => {
-    const keyOfTranslationCall = translationCall
-      .match(/["'].*["']/g)[0]
-      .slice(1, -1);
-    const existingKeys = findKeyInTranslationFiles(
-      keyOfTranslationCall,
-      existingTranslationFiles
-    );
+  calls?.length &&
+    calls.forEach((translationCall) => {
+      const keyOfTranslationCall = translationCall
+        .match(/["'].*["']/g)[0]
+        .slice(1, -1);
+      const existingKeys = findKeyInTranslationFiles(
+        keyOfTranslationCall,
+        existingTranslationFiles
+      );
 
-    if (existingKeys?.length > 0) {
-      existingKeys.forEach((existingKey) => {
-        const fileName = getFileName(existingKey.foundWhere);
-        const directory = existingKey.foundWhere.replace(fileName, "");
-        directories.add(directory);
-      });
-    }
-  });
+      if (existingKeys?.length > 0) {
+        existingKeys.forEach((existingKey) => {
+          const fileName = getFileName(existingKey.foundWhere);
+          const directory = existingKey.foundWhere.replace(fileName, "");
+          directories.add(directory);
+        });
+      }
+    });
 };
 
 const removeAllMarkedForDeletionKeys = (translationObject, parentObject) => {
@@ -248,6 +252,7 @@ const generateMetadata = ({
 
   scannedTranslationCallsList.forEach(({ calls, foundWhere }) => {
     const namespace = getNamespace(foundWhere).toLowerCase();
+    if (!calls) return;
     calls.forEach((translationCall) => {
       const keyOfTranslationCall = translationCall
         .match(/["'].*["']/g)[0]
@@ -333,3 +338,7 @@ const run = (dirToScanKeysIn, localesDir) => {
 const localesDir = "./public/locales";
 const dirToScanKeysIn = "./src/pages";
 run(dirToScanKeysIn, localesDir);
+
+// todo namespaces should not nest. fix.
+// todo t functions with parameters  like-> t('',{param:"..."})  are not matched, fix.
+// todo nested keys are not found like users {detail {name}}, fix.
