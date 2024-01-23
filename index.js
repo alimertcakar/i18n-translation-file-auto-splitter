@@ -308,7 +308,7 @@ const run = (dirToScanKeysIn, localesDir) => {
   });
 
   const keysMarkedForDeletion = new Set();
-  // todo handle common.conflicted.key
+
   Object.entries(outputMap).forEach(([directory, namespaces]) => {
     Object.entries(namespaces).forEach(([namespace, namespaceData]) => {
       writeNamespaceFile(
@@ -316,7 +316,6 @@ const run = (dirToScanKeysIn, localesDir) => {
         namespace,
         namespaceData
       );
-      console.log(namespaceData, "namespaceData");
       Object.entries(namespaceData).forEach(([key]) => {
         keysMarkedForDeletion.add(key);
       });
