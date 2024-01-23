@@ -336,5 +336,4 @@ const localesDir = "./public/locales";
 const dirToScanKeysIn = "./src/pages";
 run(dirToScanKeysIn, localesDir);
 
-// todo t functions with parameters  like-> t('',{param:"..."})  are not matched, fix.
 // todo nested keys are not found like users {detail {name}}, fix.
