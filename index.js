@@ -2,9 +2,14 @@ const fs = require("fs");
 const path = require("path");
 
 const markedForDeletion = "[[MARKED_FOR_DELETION]]";
+
+// i am a badass variable
+let systemSlashType = "/"; // for windows -> \ for else -> /
+
 // 'src/pages/Users/UserDetail/UserDetail.jsx' -> Users
 const getNamespace = (path) => {
   const parts = path.includes("\\") ? path.split("\\") : path.split("/");
+  if (path.includes("\\")) systemSlashType = "\\";
   return parts[parts.indexOf("pages") + 1];
 };
 
@@ -74,7 +79,6 @@ const findTranslationFilesInDir = (dir) => {
     if (isJsonFile(file)) fileContents[file] = JSON.parse(readedFile);
   });
 
-  // todo remove duplicates before saving?
   const result = { ...subDirectoryContents, ...fileContents };
   return result;
 };
@@ -85,13 +89,43 @@ const writeNamespaceFile = (targetDirectory, namespaceName, namespaceData) => {
   let oldContents = {};
 
   try {
-    oldContents = fs.readFileSync(targetDirectory + namespaceFile, "utf-8");
-  } catch (e) {}
+    oldContents = JSON.parse(
+      fs.readFileSync(targetDirectory + namespaceFile, "utf-8")
+    );
+  } catch (e) {
+    // its ok for this to throw, maybe there isn't an existing namespace file.
+    // we could check this beforehand. oops.
+  }
 
   fs.writeFileSync(
     targetDirectory + namespaceFile,
     JSON.stringify({ ...namespaceData, ...oldContents }, undefined, 1)
   );
+};
+
+const deleteRedundantKeysFromMainTranslationFiles = (keysSet, directories) => {
+  directories.forEach((directory) => {
+    try {
+      const oldContents = JSON.parse(
+        fs.readFileSync(
+          "." + systemSlashType + directory + "translation.json",
+          "utf-8"
+        )
+      );
+      const newContent = { ...oldContents };
+      Array.from(keysSet).forEach((key) => {
+        delete newContent[key];
+      });
+      fs.writeFileSync(
+        "." + systemSlashType + directory + "translation.json",
+        JSON.stringify(newContent, undefined, 1)
+      );
+    } catch (e) {
+      console.log(
+        "en error occured while removing moved keys from translation.json"
+      );
+    }
+  });
 };
 
 const findKeyInTranslationFiles = (targetKey, files) => {
@@ -257,29 +291,43 @@ const generateMetadata = ({
     keysWithoutValueWarnings
   );
   console.warn(
-    "Detected duplicate keys, insertem them to common.json. Check their values though, the value inserted into common is the first value found. ->",
+    "Detected duplicate keys, insert them to common.json. Check their values though, the value inserted into common is the first value found. ->",
     duplicateKeysWarnings
   );
   removeAllMarkedForDeletionKeys(outputMap);
-  return outputMap;
+  return { outputMap, localesDirectories };
 };
 
 const run = (dirToScanKeysIn, localesDir) => {
   const scannedTranslationCalls = findTranslationCallsIn(dirToScanKeysIn);
   const existingTranslationFiles = findTranslationFilesInDir(localesDir);
   // generates the metadata that we use to generate new translation files
-  const outputMap = generateMetadata({
+  const { outputMap, localesDirectories } = generateMetadata({
     scannedTranslationCalls,
     existingTranslationFiles,
   });
 
+  const keysMarkedForDeletion = new Set();
   // todo handle common.conflicted.key
-  // todo preserve older values in files
   Object.entries(outputMap).forEach(([directory, namespaces]) => {
     Object.entries(namespaces).forEach(([namespace, namespaceData]) => {
-      writeNamespaceFile(".\\" + directory, namespace, namespaceData);
+      writeNamespaceFile(
+        "." + systemSlashType + directory,
+        namespace,
+        namespaceData
+      );
+      console.log(namespaceData, "namespaceData");
+      Object.entries(namespaceData).forEach(([key]) => {
+        keysMarkedForDeletion.add(key);
+      });
     });
   });
+
+  // removes now redundant keys from translation.json files.
+  deleteRedundantKeysFromMainTranslationFiles(
+    keysMarkedForDeletion,
+    localesDirectories
+  );
 };
 
 // Test run
