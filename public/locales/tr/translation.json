@@ -4,5 +4,8 @@
   "key_unique_to_products_name_space": "products namespace'e özel key örneği",
   "name": "name örneği",
   "surname": "surname örneği",
-  "parametrized_key": "parametrized key örneği {{count}}"
+  "parametrized_key": "parametrized key örneği {{count}}",
+  "nested": {
+    "key": "nested key örneği"
+  }
 }

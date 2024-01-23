@@ -4,5 +4,8 @@
   "key_unique_to_products_name_space": "key unique to products name space mock",
   "name": "name mock",
   "surname": "surnamename mock",
-  "parametrized_key": "parametrized key mock {{count}}"
+  "parametrized_key": "parametrized key mock {{count}}",
+  "nested": {
+    "key": "nested key mock"
+  }
 }

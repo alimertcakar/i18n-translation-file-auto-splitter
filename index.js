@@ -47,6 +47,20 @@ function getProp(object, keys, defaultVal) {
   return object === undefined ? defaultVal : object;
 }
 
+/* Implementation of lodash.unset function */
+function unsetProp(object, keys) {
+  keys = Array.isArray(keys) ? keys : keys.split(".");
+  if (keys.length === 1) {
+    delete object[keys[0]];
+  } else {
+    const prop = keys.shift();
+    unsetProp(object[prop], keys);
+    if (Object.keys(object[prop]).length === 0) {
+      delete object[prop];
+    }
+  }
+}
+
 const defaultTranslationMatcher = /\b(?<![A-Z])t\(["'].*\)/g;
 
 const findTranslationCallsIn = (
@@ -125,7 +139,11 @@ const deleteRedundantKeysFromMainTranslationFiles = (keysSet, directories) => {
       );
       const newContent = { ...oldContents };
       Array.from(keysSet).forEach((key) => {
-        delete newContent[key];
+        if (newContent[key]) {
+          delete newContent[key];
+        } else if (getProp(newContent, key)) {
+          unsetProp(newContent, key);
+        }
       });
       fs.writeFileSync(
         "." + systemSlashType + directory + "translation.json",
@@ -151,6 +169,7 @@ const findKeyInTranslationFiles = (targetKey, files) => {
           key: targetKey,
           value: file?.[targetKey] || getProp(file, targetKey),
         });
+      } else {
       }
     } else {
       const subdirectoryFiles = files[fileKey];
@@ -222,12 +241,12 @@ const findLocalesDirectories = (
     });
 };
 
-const removeAllMarkedForDeletionKeys = (translationObject) => {
+const removeAllMarkedForDeletionKeys = (translationObject, parentObject) => {
   Object.keys(translationObject).forEach((key) => {
     if (translationObject[key]?.includes?.(markedForDeletion)) {
       delete translationObject[key];
     } else if (typeof translationObject[key] === "object") {
-      removeAllMarkedForDeletionKeys(translationObject[key]);
+      removeAllMarkedForDeletionKeys(translationObject[key], translationObject);
       if (Object.keys(translationObject[key]).length === 0)
         delete translationObject[key];
     }

@@ -8,6 +8,7 @@ const Testfile = () => {
       {t("translationKeyOne")}
       {t("translationKeyTwo")}
       {t("commonkey")}
+      {t("nested.key")}
     </div>
   );
 };
