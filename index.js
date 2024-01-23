@@ -37,6 +37,16 @@ const isJsonFile = (fileName) => {
   return fileName.endsWith(".json");
 };
 
+/* Implementation of lodash.get function */
+function getProp(object, keys, defaultVal) {
+  keys = Array.isArray(keys) ? keys : keys.split(".");
+  object = object[keys[0]];
+  if (object && keys.length > 1) {
+    return getProp(object, keys.slice(1));
+  }
+  return object === undefined ? defaultVal : object;
+}
+
 const defaultTranslationMatcher = /\b(?<![A-Z])t\(["'].*\)/g;
 
 const findTranslationCallsIn = (
@@ -135,11 +145,11 @@ const findKeyInTranslationFiles = (targetKey, files) => {
   Object.keys(files).forEach((fileKey) => {
     if (isJsonFile(fileKey)) {
       const file = files[fileKey];
-      if (file[targetKey]) {
+      if (file?.[targetKey] || getProp(file, targetKey)) {
         foundIn.push({
           foundWhere: fileKey,
           key: targetKey,
-          value: file[targetKey],
+          value: file?.[targetKey] || getProp(file, targetKey),
         });
       }
     } else {
@@ -212,12 +222,12 @@ const findLocalesDirectories = (
     });
 };
 
-const removeAllMarkedForDeletionKeys = (translationObject, parentObject) => {
+const removeAllMarkedForDeletionKeys = (translationObject) => {
   Object.keys(translationObject).forEach((key) => {
     if (translationObject[key]?.includes?.(markedForDeletion)) {
       delete translationObject[key];
     } else if (typeof translationObject[key] === "object") {
-      removeAllMarkedForDeletionKeys(translationObject[key], translationObject);
+      removeAllMarkedForDeletionKeys(translationObject[key]);
       if (Object.keys(translationObject[key]).length === 0)
         delete translationObject[key];
     }
