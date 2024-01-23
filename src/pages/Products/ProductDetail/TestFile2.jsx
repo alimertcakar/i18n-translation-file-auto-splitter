@@ -5,7 +5,7 @@ const Testfile = () => {
   return (
     <div>
       Testfile
-      {t("translationKeyThird")}
+      {t("name")}
       {t("translationKeyFourth")}
     </div>
   );
