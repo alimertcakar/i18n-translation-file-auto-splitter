@@ -1,12 +1,12 @@
 import React from "react";
 
 const Testfile = () => {
-  const useTranslation = useTranslation('common');
+  const useTranslation = useTranslation("common");
   return (
     <div>
       Testfile
-      {t('translationKeyThird')}
-      {t('translationKeyFourth')}
+      {t("translationKeyThird")}
+      {t("translationKeyFourth")}
     </div>
   );
 };

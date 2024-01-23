@@ -1,6 +1,8 @@
 {
-  "name": "name örnek",
-  "surname": "surname örnek",
   "commonkey": "commonkey örnek",
-  "common.conflicted.key": "common conflicted key örneği"
+  "common.conflicted.key": "common conflicted key örneği",
+  "key_unique_to_products_name_space": "products namespace'e özel key örneği",
+  "name": "name örneği",
+  "surname": "surname örneği",
+  "parametrized_key": "parametrized key örneği {{count}}"
 }

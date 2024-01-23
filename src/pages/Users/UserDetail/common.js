@@ -7,6 +7,7 @@ const Testfile = () => {
       Testfile
       {t("translationKeyOne")}
       {t("translationKeyTwo")}
+      {t("commonkey")}
     </div>
   );
 };

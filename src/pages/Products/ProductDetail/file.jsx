@@ -5,9 +5,9 @@ const Testfile = () => {
   return (
     <div>
       Testfile
-      {t("translationKeyOne")}
-      {t("translationKeyTwo")}
-      {t("commonkey")}
+      {t("name")}
+      {t("key_unique_to_products_name_space")}
+      {t("parametrized_key", { count: 5 })}
     </div>
   );
 };

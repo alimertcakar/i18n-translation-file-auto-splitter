@@ -1,6 +1,8 @@
 {
-  "name": "name mock",
-  "surname": "surname mock",
   "commonkey": "commonkey mock",
-  "common.conflicted.key": "common conflicted key mock"
+  "common.conflicted.key": "common conflicted key mock",
+  "key_unique_to_products_name_space": "key unique to products name space mock",
+  "name": "name mock",
+  "surname": "surnamename mock",
+  "parametrized_key": "parametrized key mock {{count}}"
 }

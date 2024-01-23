@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const markedForDeletion = "[[MARKED_FOR_DELETION]]";
-
+const translationKeyMatcher = /["'].*["']/g;
 // i am a badass variable
 let systemSlashType = "/"; // for windows -> \ for else -> /
 
@@ -37,7 +37,7 @@ const isJsonFile = (fileName) => {
   return fileName.endsWith(".json");
 };
 
-const defaultTranslationMatcher = /\b(?<![A-Z])t\(["'].*["']\)/g;
+const defaultTranslationMatcher = /\b(?<![A-Z])t\(["'].*\)/g;
 
 const findTranslationCallsIn = (
   folderPath,
@@ -122,7 +122,7 @@ const deleteRedundantKeysFromMainTranslationFiles = (keysSet, directories) => {
         JSON.stringify(newContent, undefined, 1)
       );
     } catch (e) {
-      console.log(
+      console.error(
         "en error occured while removing moved keys from translation.json"
       );
     }
@@ -176,11 +176,12 @@ const mapTranslationCallsToList = (translationCalls) => {
 
 const getIsDuplicateKeyChecker = () => {
   const cache = {};
-  return (key, meta) => {
+  return (key, namespace) => {
     if (cache[key]) {
       return cache[key];
     } else {
-      cache[key] = meta;
+      cache[key] = cache[key] || [];
+      cache[key].push(namespace);
       return false;
     }
   };
@@ -195,13 +196,12 @@ const findLocalesDirectories = (
   calls?.length &&
     calls.forEach((translationCall) => {
       const keyOfTranslationCall = translationCall
-        .match(/["'].*["']/g)[0]
+        .match(translationKeyMatcher)[0]
         .slice(1, -1);
       const existingKeys = findKeyInTranslationFiles(
         keyOfTranslationCall,
         existingTranslationFiles
       );
-
       if (existingKeys?.length > 0) {
         existingKeys.forEach((existingKey) => {
           const fileName = getFileName(existingKey.foundWhere);
@@ -235,7 +235,6 @@ const generateMetadata = ({
   const localesDirectories = new Set();
   const keysWithoutValueWarnings = [];
   const duplicateKeysWarnings = [];
-
   // try to determine locales directories by looking at existing translation files
   scannedTranslationCallsList.forEach(({ calls }) => {
     findLocalesDirectories(calls, existingTranslationFiles, localesDirectories);
@@ -255,7 +254,7 @@ const generateMetadata = ({
     if (!calls) return;
     calls.forEach((translationCall) => {
       const keyOfTranslationCall = translationCall
-        .match(/["'].*["']/g)[0]
+        .match(translationKeyMatcher)[0]
         .slice(1, -1);
       const existingKeys = findKeyInTranslationFiles(
         keyOfTranslationCall,
@@ -266,11 +265,9 @@ const generateMetadata = ({
         existingKeys.forEach((existingKey) => {
           const fileName = getFileName(existingKey.foundWhere);
           const directory = existingKey.foundWhere.replace(fileName, "");
-          const duplicateKey = isDuplicate(directory + existingKey.key, [
-            directory,
-            namespace,
-          ]);
-          if (!duplicateKey?.length) {
+          const duplicateKey = isDuplicate(existingKey.key, namespace);
+          const duplicateNamespace = duplicateKey?.[0];
+          if (!duplicateKey?.length || duplicateNamespace === namespace) {
             outputMap[directory][namespace][existingKey.key] =
               existingKey.value;
           } else {
@@ -278,11 +275,11 @@ const generateMetadata = ({
             if (!outputMap[directory].common) outputMap[directory].common = {};
             outputMap[directory]["common"][existingKey.key] = existingKey.value;
             const key = existingKey.key;
-            const duplicateDirectory = duplicateKey?.[0];
-            const duplicateNamespace = duplicateKey?.[1];
-            outputMap[duplicateDirectory][duplicateNamespace][key] =
-              outputMap[duplicateDirectory][duplicateNamespace][key] +
-              markedForDeletion;
+            [...localesDirectories].forEach((directory) => {
+              outputMap[directory][duplicateNamespace][key] =
+                outputMap[directory][duplicateNamespace][key] +
+                markedForDeletion;
+            });
           }
         });
       } else {
@@ -339,6 +336,5 @@ const localesDir = "./public/locales";
 const dirToScanKeysIn = "./src/pages";
 run(dirToScanKeysIn, localesDir);
 
-// todo namespaces should not nest. fix.
 // todo t functions with parameters  like-> t('',{param:"..."})  are not matched, fix.
 // todo nested keys are not found like users {detail {name}}, fix.
