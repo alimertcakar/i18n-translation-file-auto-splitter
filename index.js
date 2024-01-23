@@ -73,15 +73,24 @@ const findTranslationFilesInDir = (dir) => {
     const readedFile = fs.readFileSync(file, "utf-8");
     if (isJsonFile(file)) fileContents[file] = JSON.parse(readedFile);
   });
+
+  // todo remove duplicates before saving?
   const result = { ...subDirectoryContents, ...fileContents };
   return result;
 };
 
 const writeNamespaceFile = (targetDirectory, namespaceName, namespaceData) => {
   const namespaceFile = `${namespaceName}.json`;
+
+  let oldContents = {};
+
+  try {
+    oldContents = fs.readFileSync(targetDirectory + namespaceFile, "utf-8");
+  } catch (e) {}
+
   fs.writeFileSync(
     targetDirectory + namespaceFile,
-    JSON.stringify(namespaceData, undefined, 1)
+    JSON.stringify({ ...namespaceData, ...oldContents }, undefined, 1)
   );
 };
 
