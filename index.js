@@ -329,6 +329,33 @@ const generateMetadata = ({
   return { outputMap, localesDirectories };
 };
 
+const updateTranslationCallsToNewNamespace = (folderPath, namespace) => {
+  if (namespace === "common") return; // todo
+
+  const directoryContents = fs.readdirSync(folderPath).map((fileName) => {
+    return path.join(folderPath, fileName);
+  });
+  const files = directoryContents.filter(isFile);
+  const directories = directoryContents.filter(isDirectory);
+
+  directories.forEach((directory) => {
+    updateTranslationCallsToNewNamespace(directory, namespace);
+  });
+  files.forEach((file) => {
+    const readedFile = fs.readFileSync(file, "utf-8");
+    let modifiedFile;
+    if (isTargetedFile(file)) {
+      // @ts-ignore
+      modifiedFile = readedFile.replaceAll(
+        /useTranslation\(/g,
+        `useTranslation("${namespace}"`
+      );
+    }
+
+    fs.writeFileSync(file, modifiedFile ?? readedFile);
+  });
+};
+
 const run = (dirToScanKeysIn, localesDir) => {
   const scannedTranslationCalls = findTranslationCallsIn(dirToScanKeysIn);
   const existingTranslationFiles = findTranslationFilesInDir(localesDir);
@@ -340,8 +367,15 @@ const run = (dirToScanKeysIn, localesDir) => {
 
   const keysMarkedForDeletion = new Set();
 
-  Object.entries(outputMap).forEach(([directory, namespaces]) => {
+  Object.entries(outputMap).forEach(([directory, namespaces], index) => {
     Object.entries(namespaces).forEach(([namespace, namespaceData]) => {
+      // has to be only run once
+      index === 0 &&
+        updateTranslationCallsToNewNamespace(
+          `${dirToScanKeysIn}${systemSlashType}${namespace}`,
+          namespace
+        );
+
       writeNamespaceFile(
         "." + systemSlashType + directory,
         namespace,
@@ -361,8 +395,6 @@ const run = (dirToScanKeysIn, localesDir) => {
 };
 
 // Test run
-const localesDir = "./public/locales";
-const dirToScanKeysIn = "./src/pages";
+const localesDir = ".\\public\\locales";
+const dirToScanKeysIn = ".\\src\\pages";
 run(dirToScanKeysIn, localesDir);
-
-// todo nested keys are not found like users {detail {name}}, fix.

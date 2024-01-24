@@ -1,7 +1,7 @@
 import React from "react";
 
 const Testfile = () => {
-  const useTranslation = useTranslation("common");
+  const useTranslation = useTranslation();
   return (
     <div>
       Testfile
