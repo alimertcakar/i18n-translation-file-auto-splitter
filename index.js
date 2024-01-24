@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const markedForDeletion = "[[MARKED_FOR_DELETION]]";
-const translationKeyMatcher = /["'].*["']/g;
+const translationKeyMatcher = /["'](.*?)["']/g;
 // i am a badass variable
 let systemSlashType = "/"; // for windows -> \ for else -> /
 
