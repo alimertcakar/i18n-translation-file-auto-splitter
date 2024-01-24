@@ -7,5 +7,7 @@
   "parametrized_key": "parametrized key örneği {{count}}",
   "nested": {
     "key": "nested key örneği"
-  }
+  },
+  "some_component_text": "örnek component text",
+  "common_mismatch": "common mismatch"
 }

@@ -7,5 +7,7 @@
   "parametrized_key": "parametrized key mock {{count}}",
   "nested": {
     "key": "nested key mock"
-  }
+  },
+  "some_component_text": "component text mock",
+  "common_mismatch": "common mismatch"
 }

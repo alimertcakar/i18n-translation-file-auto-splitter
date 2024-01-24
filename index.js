@@ -8,9 +8,17 @@ let systemSlashType = "/"; // for windows -> \ for else -> /
 
 // 'src/pages/Users/UserDetail/UserDetail.jsx' -> Users
 const getNamespace = (path) => {
+  // save to common.json if we are not under pages directory
+  if (!path.includes("pages")) return "common";
   const parts = path.includes("\\") ? path.split("\\") : path.split("/");
   if (path.includes("\\")) systemSlashType = "\\";
   return parts[parts.indexOf("pages") + 1];
+};
+const getSrcNamespace = (path) => {
+  const parts = path.includes("\\") ? path.split("\\") : path.split("/");
+  if (path.includes("\\")) systemSlashType = "\\";
+  const result = parts[parts.indexOf("src") + 1];
+  return result !== "pages" ? result : null;
 };
 
 const getFileName = (path) => {
@@ -271,15 +279,23 @@ const generateMetadata = ({
 
   // set namespaces and directories to empty dictionaries
   scannedTranslationCallsList.forEach(({ foundWhere }) => {
-    const namespace = getNamespace(foundWhere).toLowerCase();
+    const namespace = getNamespace(foundWhere);
+    // save path of folders that are not under pages
+    const srcNamespace = getSrcNamespace(foundWhere);
+    const namespaceToSave = srcNamespace ? "common" : namespace;
+
     [...localesDirectories].forEach((directory) => {
       !outputMap[directory] && (outputMap[directory] = {});
-      outputMap[directory][namespace] = {};
+      outputMap[directory][namespaceToSave] = {};
     });
   });
 
   scannedTranslationCallsList.forEach(({ calls, foundWhere }) => {
-    const namespace = getNamespace(foundWhere).toLowerCase();
+    const namespace = getNamespace(foundWhere);
+    // save path of folders that are not under pages
+    const srcNamespace = getSrcNamespace(foundWhere);
+    const namespaceToSave = srcNamespace ? "common" : namespace;
+
     if (!calls) return;
     calls.forEach((translationCall) => {
       const keyOfTranslationCall = translationCall
@@ -294,10 +310,10 @@ const generateMetadata = ({
         existingKeys.forEach((existingKey) => {
           const fileName = getFileName(existingKey.foundWhere);
           const directory = existingKey.foundWhere.replace(fileName, "");
-          const duplicateKey = isDuplicate(existingKey.key, namespace);
+          const duplicateKey = isDuplicate(existingKey.key, namespaceToSave);
           const duplicateNamespace = duplicateKey?.[0];
-          if (!duplicateKey?.length || duplicateNamespace === namespace) {
-            outputMap[directory][namespace][existingKey.key] =
+          if (!duplicateKey?.length || duplicateNamespace === namespaceToSave) {
+            outputMap[directory][namespaceToSave][existingKey.key] =
               existingKey.value;
           } else {
             duplicateKeysWarnings.push({ existingKey });
@@ -305,6 +321,7 @@ const generateMetadata = ({
             outputMap[directory]["common"][existingKey.key] = existingKey.value;
             const key = existingKey.key;
             [...localesDirectories].forEach((directory) => {
+              if (duplicateNamespace === "common") return;
               outputMap[directory][duplicateNamespace][key] =
                 outputMap[directory][duplicateNamespace][key] +
                 markedForDeletion;
@@ -322,7 +339,7 @@ const generateMetadata = ({
     keysWithoutValueWarnings
   );
   console.warn(
-    "Detected duplicate keys, insert them to common.json. Check their values though, the value inserted into common is the first value found. ->",
+    "Detected duplicate keys, inserted them to common.json. Check their values though, the value inserted into common is the first value found. ->",
     duplicateKeysWarnings
   );
   removeAllMarkedForDeletionKeys(outputMap);
@@ -330,8 +347,6 @@ const generateMetadata = ({
 };
 
 const updateTranslationCallsToNewNamespace = (folderPath, namespace) => {
-  if (namespace === "common") return; // todo
-
   const directoryContents = fs.readdirSync(folderPath).map((fileName) => {
     return path.join(folderPath, fileName);
   });
@@ -356,6 +371,18 @@ const updateTranslationCallsToNewNamespace = (folderPath, namespace) => {
   });
 };
 
+const updatePagesTranslationCalls = (index, namespace) => {
+  // has to be only run once
+  if (index !== 0) return;
+
+  const pagesUrl = dirToScanKeysIn + systemSlashType + "pages";
+  namespace !== "common" &&
+    updateTranslationCallsToNewNamespace(
+      `${pagesUrl}${systemSlashType}${namespace}`,
+      namespace
+    );
+};
+
 const run = (dirToScanKeysIn, localesDir) => {
   const scannedTranslationCalls = findTranslationCallsIn(dirToScanKeysIn);
   const existingTranslationFiles = findTranslationFilesInDir(localesDir);
@@ -369,12 +396,8 @@ const run = (dirToScanKeysIn, localesDir) => {
 
   Object.entries(outputMap).forEach(([directory, namespaces], index) => {
     Object.entries(namespaces).forEach(([namespace, namespaceData]) => {
-      // has to be only run once
-      index === 0 &&
-        updateTranslationCallsToNewNamespace(
-          `${dirToScanKeysIn}${systemSlashType}${namespace}`,
-          namespace
-        );
+      // updates translation calls under pages
+      updatePagesTranslationCalls(index, namespace);
 
       writeNamespaceFile(
         "." + systemSlashType + directory,
@@ -396,5 +419,5 @@ const run = (dirToScanKeysIn, localesDir) => {
 
 // Test run
 const localesDir = ".\\public\\locales";
-const dirToScanKeysIn = ".\\src\\pages";
+const dirToScanKeysIn = ".\\src";
 run(dirToScanKeysIn, localesDir);
